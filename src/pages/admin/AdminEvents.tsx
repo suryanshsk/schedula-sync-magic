@@ -13,7 +13,8 @@ import {
   Shield,
   MoreHorizontal,
   Trash2,
-  Edit
+  Edit,
+  Download
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { eventStorage, userStorage, rsvpStorage } from '@/lib/storage';
@@ -23,6 +24,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -90,6 +92,197 @@ export const AdminEvents: React.FC = () => {
     }
   };
 
+  const handleExportEventData = (eventId: string) => {
+    try {
+      const event = eventStorage.getById(eventId);
+      if (!event) {
+        toast.error('Event not found');
+        return;
+      }
+
+      // Get all RSVPs for this event
+      const eventRSVPs = allRSVPs.filter(rsvp => rsvp.eventId === eventId);
+      
+      if (eventRSVPs.length === 0) {
+        toast.info('No RSVP data found for this event');
+        return;
+      }
+
+      // Prepare CSV data with comprehensive information
+      const csvHeaders = [
+        'Name',
+        'User ID',
+        'Email',
+        'RSVP Status',
+        'Registration Date',
+        'Confirmed At',
+        'Attendance Status',
+        'Check-in Time',
+        'Check-in Method',
+        'Bio',
+        'Location',
+        'LinkedIn',
+        'GitHub',
+        'Twitter',
+        'Portfolio'
+      ];
+
+      const csvData = eventRSVPs.map(rsvp => {
+        const userData = allUsers.find(u => u.id === rsvp.userId);
+        const formatDate = (dateString?: string) => 
+          dateString ? new Date(dateString).toLocaleString() : 'N/A';
+        
+        return [
+          userData?.name || 'N/A',
+          rsvp.userId,
+          userData?.email || 'N/A',
+          rsvp.status.charAt(0).toUpperCase() + rsvp.status.slice(1),
+          formatDate(rsvp.registrationDate),
+          formatDate(rsvp.confirmedAt),
+          rsvp.attendanceStatus ? 
+            rsvp.attendanceStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+            (rsvp.checkedIn ? 'Checked In' : 'Not Checked In'),
+          formatDate(rsvp.checkedInAt),
+          rsvp.checkedInMethod ? 
+            rsvp.checkedInMethod.charAt(0).toUpperCase() + rsvp.checkedInMethod.slice(1) : 'N/A',
+          userData?.bio || 'N/A',
+          userData?.location || 'N/A',
+          userData?.socialLinks?.linkedin || 'N/A',
+          userData?.socialLinks?.github || 'N/A',
+          userData?.socialLinks?.twitter || 'N/A',
+          userData?.socialLinks?.portfolio || 'N/A'
+        ];
+      });
+
+      // Convert to CSV format
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvData.map(row => 
+          row.map(field => 
+            // Escape commas and quotes in CSV data
+            typeof field === 'string' && (field.includes(',') || field.includes('"')) 
+              ? `"${field.replace(/"/g, '""')}"` 
+              : field
+          ).join(',')
+        )
+      ].join('\n');
+
+      // Create and download the file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_attendees_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`Event data exported successfully for "${event.title}"`);
+    } catch (error) {
+      console.error('Error exporting event data:', error);
+      toast.error('Failed to export event data');
+    }
+  };
+
+  const handleExportAllEventsData = () => {
+    try {
+      if (allRSVPs.length === 0) {
+        toast.info('No RSVP data found across all events');
+        return;
+      }
+
+      // Prepare CSV data with comprehensive information including event details
+      const csvHeaders = [
+        'Event Title',
+        'Event Type',
+        'Event Status',
+        'Event Date',
+        'Organizer Name',
+        'Organizer Email',
+        'Attendee Name',
+        'User ID',
+        'Attendee Email',
+        'RSVP Status',
+        'Registration Date',
+        'Confirmed At',
+        'Attendance Status',
+        'Check-in Time',
+        'Check-in Method',
+        'Bio',
+        'Location',
+        'LinkedIn',
+        'GitHub',
+        'Twitter',
+        'Portfolio'
+      ];
+
+      const csvData = allRSVPs.map(rsvp => {
+        const event = allEvents.find(e => e.id === rsvp.eventId);
+        const userData = allUsers.find(u => u.id === rsvp.userId);
+        const organizer = allUsers.find(u => u.id === event?.organizerId);
+        const formatDate = (dateString?: string) => 
+          dateString ? new Date(dateString).toLocaleString() : 'N/A';
+        
+        return [
+          event?.title || 'N/A',
+          event?.type || 'N/A',
+          event?.status || 'N/A',
+          event?.startDate ? formatDate(event.startDate) : 'N/A',
+          organizer?.name || 'N/A',
+          organizer?.email || 'N/A',
+          userData?.name || 'N/A',
+          rsvp.userId,
+          userData?.email || 'N/A',
+          rsvp.status.charAt(0).toUpperCase() + rsvp.status.slice(1),
+          formatDate(rsvp.registrationDate),
+          formatDate(rsvp.confirmedAt),
+          rsvp.attendanceStatus ? 
+            rsvp.attendanceStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+            (rsvp.checkedIn ? 'Checked In' : 'Not Checked In'),
+          formatDate(rsvp.checkedInAt),
+          rsvp.checkedInMethod ? 
+            rsvp.checkedInMethod.charAt(0).toUpperCase() + rsvp.checkedInMethod.slice(1) : 'N/A',
+          userData?.bio || 'N/A',
+          userData?.location || 'N/A',
+          userData?.socialLinks?.linkedin || 'N/A',
+          userData?.socialLinks?.github || 'N/A',
+          userData?.socialLinks?.twitter || 'N/A',
+          userData?.socialLinks?.portfolio || 'N/A'
+        ];
+      });
+
+      // Convert to CSV format
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvData.map(row => 
+          row.map(field => 
+            // Escape commas and quotes in CSV data
+            typeof field === 'string' && (field.includes(',') || field.includes('"')) 
+              ? `"${field.replace(/"/g, '""')}"` 
+              : field
+          ).join(',')
+        )
+      ].join('\n');
+
+      // Create and download the file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `all_events_data_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`All events data exported successfully (${allRSVPs.length} records)`);
+    } catch (error) {
+      console.error('Error exporting all events data:', error);
+      toast.error('Failed to export all events data');
+    }
+  };
+
   const statuses = ['all', 'draft', 'published', 'cancelled', 'completed'];
   const types = ['all', 'conference', 'workshop', 'networking', 'social', 'online'];
 
@@ -100,8 +293,16 @@ export const AdminEvents: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">All Events</h1>
-        <p className="text-muted-foreground">Monitor and manage all events on the platform</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">All Events</h1>
+            <p className="text-muted-foreground">Monitor and manage all events on the platform</p>
+          </div>
+          <Button onClick={handleExportAllEventsData} variant="outline" className="w-full sm:w-auto">
+            <Download className="h-4 w-4 mr-2" />
+            Download All Data
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -277,6 +478,11 @@ export const AdminEvents: React.FC = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleExportEventData(event.id)}>
+                            <Download className="h-4 w-4 mr-2" />
+                            Download Data
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           {event.status === 'draft' && (
                             <DropdownMenuItem onClick={() => handleUpdateEventStatus(event.id, 'published')}>
                               <Eye className="h-4 w-4 mr-2" />
