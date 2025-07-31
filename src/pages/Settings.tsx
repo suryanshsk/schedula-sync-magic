@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Camera, Upload, User as UserIcon, X } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { userStorage, eventStorage, rsvpStorage } from '@/lib/storage';
 import { toast } from 'sonner';
@@ -15,6 +16,8 @@ import { toast } from 'sonner';
 export const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(user?.avatar || null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -44,6 +47,7 @@ export const Settings: React.FC = () => {
   // Update form when user data changes
   useEffect(() => {
     if (user) {
+      setProfileImage(user.avatar || null);
       form.reset({
         name: user.name || '',
         email: user.email || '',
@@ -63,6 +67,60 @@ export const Settings: React.FC = () => {
       });
     }
   }, [user, form]);
+
+  // Handle profile image upload
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    // Convert to base64 for local storage
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64String = e.target?.result as string;
+      setProfileImage(base64String);
+      
+      // Update user immediately
+      if (user) {
+        const updatedUser = userStorage.update(user.id, { avatar: base64String });
+        if (updatedUser) {
+          updateUser(updatedUser);
+          toast.success('Profile picture updated successfully');
+        }
+      }
+      setIsUploadingImage(false);
+    };
+    reader.onerror = () => {
+      toast.error('Failed to upload image');
+      setIsUploadingImage(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove profile image
+  const handleRemoveImage = () => {
+    setProfileImage(null);
+    if (user) {
+      const updatedUser = userStorage.update(user.id, { avatar: undefined });
+      if (updatedUser) {
+        updateUser(updatedUser);
+        toast.success('Profile picture removed');
+      }
+    }
+  };
 
   const onSubmit = (data: any) => {
     if (!user) return;
@@ -169,14 +227,90 @@ export const Settings: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and preferences</p>
+    <div className="container mx-auto px-4 sm:px-6 py-6 max-w-4xl">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Settings</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">Manage your account and preferences</p>
       </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* Profile Picture */}
+          <Card className="card-glass">
+            <CardHeader>
+              <CardTitle>Profile Picture</CardTitle>
+              <CardDescription>
+                Update your profile picture to personalize your account
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                <div className="relative flex-shrink-0 self-center sm:self-auto">
+                  <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200">
+                    {profileImage ? (
+                      <img 
+                        src={profileImage} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <UserIcon className="w-10 h-10 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  {isUploadingImage && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex flex-col gap-3 w-full sm:w-auto">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => document.getElementById('image-upload')?.click()}
+                      disabled={isUploadingImage}
+                      className="w-full sm:w-auto"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      {profileImage ? 'Change Photo' : 'Upload Photo'}
+                    </Button>
+                    
+                    {profileImage && (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleRemoveImage}
+                        disabled={isUploadingImage}
+                        className="w-full sm:w-auto"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <p className="text-sm text-gray-500 text-center sm:text-left">
+                    Max file size: 5MB. Supported formats: JPG, PNG, GIF
+                  </p>
+                </div>
+              </div>
+              
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </CardContent>
+          </Card>
+
           {/* Profile Information */}
           <Card className="card-glass">
             <CardHeader>
@@ -525,9 +659,9 @@ export const Settings: React.FC = () => {
                           placeholder="Confirm new password"
                         />
                       </div>
-                      <div className="flex gap-2">
-                        <Button onClick={handleChangePassword}>Change Password</Button>
-                        <Button variant="outline" onClick={() => setIsChangePasswordOpen(false)}>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button onClick={handleChangePassword} className="w-full sm:w-auto">Change Password</Button>
+                        <Button variant="outline" onClick={() => setIsChangePasswordOpen(false)} className="w-full sm:w-auto">
                           Cancel
                         </Button>
                       </div>
@@ -543,8 +677,8 @@ export const Settings: React.FC = () => {
           </Card>
 
           {/* Save Button */}
-          <div className="flex justify-end">
-            <Button type="submit" size="lg">
+          <div className="flex justify-center sm:justify-end">
+            <Button type="submit" size="lg" className="w-full sm:w-auto">
               Save Changes
             </Button>
           </div>

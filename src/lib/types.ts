@@ -98,12 +98,14 @@ export interface RSVP {
   event?: Event;
   status: 'confirmed' | 'waitlisted' | 'cancelled';
   registrationDate: string;
+  confirmedAt?: string; // When RSVP was confirmed by organizer
   qrCode?: string;
   notes?: string;
   checkedIn: boolean;
   checkedInAt?: string;
   checkedInBy?: string;
   checkedInMethod?: 'qr' | 'manual' | 'self';
+  attendanceStatus?: 'not_checked_in' | 'checked_in' | 'no_show'; // Attendance tracking
 }
 
 export interface Notification {

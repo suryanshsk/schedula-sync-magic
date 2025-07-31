@@ -247,6 +247,9 @@ export const rsvpStorage = {
       id: generateId(),
       registrationDate: new Date().toISOString(),
       checkedIn: false,
+      attendanceStatus: 'not_checked_in',
+      // Set confirmedAt only if status is confirmed
+      ...(rsvpData.status === 'confirmed' && { confirmedAt: new Date().toISOString() })
     };
     rsvps.push(newRSVP);
     setStorageData(STORAGE_KEYS.RSVPS, rsvps);
@@ -335,7 +338,11 @@ export const rsvpStorage = {
       .sort((a, b) => new Date(a.registrationDate).getTime() - new Date(b.registrationDate).getTime())[0];
 
     if (waitlistedRSVP) {
-      return rsvpStorage.update(waitlistedRSVP.id, { status: 'confirmed' });
+      return rsvpStorage.update(waitlistedRSVP.id, { 
+        status: 'confirmed',
+        confirmedAt: new Date().toISOString(),
+        attendanceStatus: 'not_checked_in'
+      });
     }
 
     return null;
@@ -431,6 +438,7 @@ export const attendanceStorage = {
         checkedInAt: newAttendance.checkedInAt,
         checkedInBy: attendanceData.checkedInBy,
         checkedInMethod: attendanceData.method,
+        attendanceStatus: 'checked_in'
       });
     }
 

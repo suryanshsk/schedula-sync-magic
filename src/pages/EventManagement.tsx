@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, QrCode, Calendar, BarChart3, Edit, Settings, Check, X, Clock } from 'lucide-react';
+import { ArrowLeft, Users, QrCode, Calendar, BarChart3, Edit, Settings, Check, X, Clock, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,6 +76,102 @@ export const EventManagement: React.FC = () => {
       }
     } catch (error) {
       toast.error('Failed to reject RSVP');
+    }
+  };
+
+  // Handle export event data
+  const handleExportEventData = () => {
+    try {
+      if (!event) {
+        toast.error('Event not found');
+        return;
+      }
+
+      // Check if user is authorized to export data
+      if (!user || (user.role !== 'admin' && event.organizerId !== user.id)) {
+        toast.error('You are not authorized to export data for this event');
+        return;
+      }
+
+      if (rsvps.length === 0) {
+        toast.info('No RSVP data found for this event');
+        return;
+      }
+
+      // Prepare CSV data with comprehensive information
+      const csvHeaders = [
+        'Name',
+        'User ID',
+        'Email',
+        'RSVP Status',
+        'Registration Date',
+        'Confirmed At',
+        'Attendance Status',
+        'Check-in Time',
+        'Check-in Method',
+        'Bio',
+        'Location',
+        'LinkedIn',
+        'GitHub',
+        'Twitter',
+        'Portfolio'
+      ];
+
+      const csvData = rsvps.map(rsvp => {
+        const userData = userStorage.getById(rsvp.userId);
+        const formatDate = (dateString?: string) => 
+          dateString ? new Date(dateString).toLocaleString() : 'N/A';
+        
+        return [
+          userData?.name || 'N/A',
+          rsvp.userId,
+          userData?.email || 'N/A',
+          rsvp.status.charAt(0).toUpperCase() + rsvp.status.slice(1),
+          formatDate(rsvp.registrationDate),
+          formatDate(rsvp.confirmedAt),
+          rsvp.attendanceStatus ? 
+            rsvp.attendanceStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+            (rsvp.checkedIn ? 'Checked In' : 'Not Checked In'),
+          formatDate(rsvp.checkedInAt),
+          rsvp.checkedInMethod ? 
+            rsvp.checkedInMethod.charAt(0).toUpperCase() + rsvp.checkedInMethod.slice(1) : 'N/A',
+          userData?.bio || 'N/A',
+          userData?.location || 'N/A',
+          userData?.socialLinks?.linkedin || 'N/A',
+          userData?.socialLinks?.github || 'N/A',
+          userData?.socialLinks?.twitter || 'N/A',
+          userData?.socialLinks?.portfolio || 'N/A'
+        ];
+      });
+
+      // Convert to CSV format
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvData.map(row => 
+          row.map(field => 
+            // Escape commas and quotes in CSV data
+            typeof field === 'string' && (field.includes(',') || field.includes('"')) 
+              ? `"${field.replace(/"/g, '""')}"` 
+              : field
+          ).join(',')
+        )
+      ].join('\n');
+
+      // Create and download the file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_attendees_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`Event data exported successfully for "${event.title}"`);
+    } catch (error) {
+      console.error('Error exporting event data:', error);
+      toast.error('Failed to export event data');
     }
   };
 
@@ -172,6 +268,11 @@ export const EventManagement: React.FC = () => {
               <BarChart3 className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Analytics</span>
               <span className="sm:hidden">Stats</span>
+            </Button>
+            <Button variant="outline" onClick={handleExportEventData} className="w-full sm:w-auto">
+              <Download className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Export Data</span>
+              <span className="sm:hidden">Export</span>
             </Button>
           </div>
         </div>
