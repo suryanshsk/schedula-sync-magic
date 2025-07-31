@@ -35,57 +35,123 @@ import Unauthorized from "./pages/Unauthorized";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/events" element={<Events />} />
-              <Route path="/event/:eventId" element={<EventDetails />} />
-              <Route path="/event/:eventId/edit" element={<EditEvent />} />
-              <Route path="/event/:eventId/manage" element={<EventManagement />} />
-              <Route path="/event/:eventId/analytics" element={<EventAnalytics />} />
-              <Route path="/calendar" element={<MyCalendar />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/create-event" element={<CreateEvent />} />
-              <Route path="/my-events" element={<MyEvents />} />
-              <Route path="/analytics" element={
-                <ProtectedRoute requiredRoles={['organizer', 'admin']}>
-                  <Analytics />
-                </ProtectedRoute>
-              } />
-              <Route path="/qr-scanner" element={
-                <ProtectedRoute requiredRoles={['organizer']}>
-                  <QRScanner />
-                </ProtectedRoute>
-              } />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/features" element={<Features />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/help" element={<Help />} />
-              <Route path="/unauthorized" element={<Unauthorized />} />
-              {/* Admin Routes */}
-              <Route path="/admin/analytics" element={<AdminAnalytics />} />
-              <Route path="/admin/users" element={<AdminUsers />} />
-              <Route path="/admin/organizers" element={<AdminOrganizers />} />
-              <Route path="/admin/events" element={<AdminEvents />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/help" element={<Help />} />
+                <Route path="/unauthorized" element={<Unauthorized />} />
+                
+                {/* Protected authenticated routes */}
+                <Route path="/dashboard" element={
+                  <ProtectedRoute requiredRoles={['user', 'organizer', 'admin']}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/events" element={
+                  <ProtectedRoute requiredRoles={['user', 'organizer', 'admin']}>
+                    <Events />
+                  </ProtectedRoute>
+                } />
+                <Route path="/event/:eventId" element={
+                  <ProtectedRoute requiredRoles={['user', 'organizer', 'admin']}>
+                    <EventDetails />
+                  </ProtectedRoute>
+                } />
+                <Route path="/event/:eventId/edit" element={
+                  <ProtectedRoute requiredRoles={['organizer', 'admin']}>
+                    <EditEvent />
+                  </ProtectedRoute>
+                } />
+                <Route path="/event/:eventId/manage" element={
+                  <ProtectedRoute requiredRoles={['organizer', 'admin']}>
+                    <EventManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="/event/:eventId/analytics" element={
+                  <ProtectedRoute requiredRoles={['organizer', 'admin']}>
+                    <EventAnalytics />
+                  </ProtectedRoute>
+                } />
+                <Route path="/calendar" element={
+                  <ProtectedRoute requiredRoles={['user', 'organizer', 'admin']}>
+                    <MyCalendar />
+                  </ProtectedRoute>
+                } />
+                <Route path="/notifications" element={
+                  <ProtectedRoute requiredRoles={['user', 'organizer', 'admin']}>
+                    <Notifications />
+                  </ProtectedRoute>
+                } />
+                <Route path="/create-event" element={
+                  <ProtectedRoute requiredRoles={['organizer', 'admin']}>
+                    <CreateEvent />
+                  </ProtectedRoute>
+                } />
+                <Route path="/my-events" element={
+                  <ProtectedRoute requiredRoles={['organizer', 'admin']}>
+                    <MyEvents />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analytics" element={
+                  <ProtectedRoute requiredRoles={['organizer', 'admin']}>
+                    <Analytics />
+                  </ProtectedRoute>
+                } />
+                <Route path="/qr-scanner" element={
+                  <ProtectedRoute requiredRoles={['organizer', 'admin']}>
+                    <QRScanner />
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
+                  <ProtectedRoute requiredRoles={['user', 'organizer', 'admin']}>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Admin Routes */}
+                <Route path="/admin/analytics" element={
+                  <ProtectedRoute requiredRoles={['admin']}>
+                    <AdminAnalytics />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/users" element={
+                  <ProtectedRoute requiredRoles={['admin']}>
+                    <AdminUsers />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/organizers" element={
+                  <ProtectedRoute requiredRoles={['admin']}>
+                    <AdminOrganizers />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/events" element={
+                  <ProtectedRoute requiredRoles={['admin']}>
+                    <AdminEvents />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Catch-all route - must be last */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
