@@ -9,9 +9,18 @@ export interface User {
   avatar?: string;
   bio?: string;
   location?: string;
+  socialLinks?: SocialLinks;
   preferences: UserPreferences;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SocialLinks {
+  linkedin?: string;
+  github?: string;
+  twitter?: string;
+  portfolio?: string;
+  other?: string[];
 }
 
 export interface UserPreferences {

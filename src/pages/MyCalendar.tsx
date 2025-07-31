@@ -9,9 +9,8 @@ import { rsvpStorage, eventStorage } from '@/lib/storage';
 export const MyCalendar: React.FC = () => {
   const { user } = useAuth();
   const userRSVPs = user ? rsvpStorage.getByUser(user.id) : [];
-  const confirmedRSVPs = userRSVPs.filter(rsvp => rsvp.status === 'confirmed');
   
-  const eventsWithDetails = confirmedRSVPs.map(rsvp => ({
+  const eventsWithDetails = userRSVPs.map(rsvp => ({
     rsvp,
     event: eventStorage.getById(rsvp.eventId)
   })).filter(item => item.event).sort((a, b) => 
@@ -25,6 +24,19 @@ export const MyCalendar: React.FC = () => {
   const pastEvents = eventsWithDetails.filter(item => 
     new Date(item.event!.startDate) <= new Date()
   );
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return <Badge variant="default" className="text-green-600 bg-green-50">Confirmed</Badge>;
+      case 'waitlisted':
+        return <Badge variant="secondary" className="text-orange-600 bg-orange-50">Pending Approval</Badge>;
+      case 'cancelled':
+        return <Badge variant="outline" className="text-red-600 bg-red-50">Cancelled</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
@@ -45,7 +57,7 @@ export const MyCalendar: React.FC = () => {
                     <Badge variant="secondary" className="capitalize">
                       {event!.type}
                     </Badge>
-                    <Badge variant="default">Confirmed</Badge>
+                    {getStatusBadge(rsvp.status)}
                   </div>
                   <CardTitle className="text-lg line-clamp-2">{event!.title}</CardTitle>
                 </CardHeader>
@@ -70,7 +82,9 @@ export const MyCalendar: React.FC = () => {
 
                   <div className="flex gap-2">
                     <Button size="sm" className="flex-1">View Details</Button>
-                    <Button size="sm" variant="outline">QR Ticket</Button>
+                    {rsvp.status === 'confirmed' && (
+                      <Button size="sm" variant="outline">QR Ticket</Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

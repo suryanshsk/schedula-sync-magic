@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,12 +7,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/components/AuthProvider';
-import { userStorage } from '@/lib/storage';
+import { userStorage, eventStorage, rsvpStorage } from '@/lib/storage';
 import { toast } from 'sonner';
 
 export const Settings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
   
   const form = useForm({
     defaultValues: {
@@ -20,6 +27,10 @@ export const Settings: React.FC = () => {
       email: user?.email || '',
       bio: user?.bio || '',
       location: user?.location || '',
+      linkedin: user?.socialLinks?.linkedin || '',
+      github: user?.socialLinks?.github || '',
+      twitter: user?.socialLinks?.twitter || '',
+      portfolio: user?.socialLinks?.portfolio || '',
       emailNotifications: user?.preferences.emailNotifications ?? true,
       pushNotifications: user?.preferences.pushNotifications ?? true,
       eventReminders: user?.preferences.eventReminders ?? true,
@@ -30,13 +41,42 @@ export const Settings: React.FC = () => {
     },
   });
 
+  // Update form when user data changes
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        name: user.name || '',
+        email: user.email || '',
+        bio: user.bio || '',
+        location: user.location || '',
+        linkedin: user.socialLinks?.linkedin || '',
+        github: user.socialLinks?.github || '',
+        twitter: user.socialLinks?.twitter || '',
+        portfolio: user.socialLinks?.portfolio || '',
+        emailNotifications: user.preferences.emailNotifications ?? true,
+        pushNotifications: user.preferences.pushNotifications ?? true,
+        eventReminders: user.preferences.eventReminders ?? true,
+        marketingEmails: user.preferences.marketingEmails ?? false,
+        theme: user.preferences.theme || 'system',
+        language: user.preferences.language || 'en',
+        timezone: user.preferences.timezone || 'UTC',
+      });
+    }
+  }, [user, form]);
+
   const onSubmit = (data: any) => {
     if (!user) return;
 
-    const updatedUser = userStorage.update(user.id, {
+    const updatedUserData = {
       name: data.name,
       bio: data.bio,
       location: data.location,
+      socialLinks: {
+        linkedin: data.linkedin || undefined,
+        github: data.github || undefined,
+        twitter: data.twitter || undefined,
+        portfolio: data.portfolio || undefined,
+      },
       preferences: {
         ...user.preferences,
         emailNotifications: data.emailNotifications,
@@ -47,10 +87,84 @@ export const Settings: React.FC = () => {
         language: data.language,
         timezone: data.timezone,
       }
-    });
+    };
+
+    const updatedUser = userStorage.update(user.id, updatedUserData);
 
     if (updatedUser) {
+      // Update the auth context with the new user data
+      updateUser(updatedUser);
       toast.success('Settings updated successfully');
+    } else {
+      toast.error('Failed to update settings');
+    }
+  };
+
+  const handleChangePassword = () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters long');
+      return;
+    }
+
+    // In a real app, you would verify the current password against the server
+    // For this demo, we'll just simulate a successful change
+    toast.success('Password changed successfully');
+    setIsChangePasswordOpen(false);
+    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  };
+
+  const handleDownloadData = () => {
+    if (!user) return;
+
+    try {
+      // Gather all user data
+      const userRSVPs = rsvpStorage.getAll().filter(rsvp => rsvp.userId === user.id);
+      const userEvents = eventStorage.getAll().filter(event => event.organizerId === user.id);
+
+      const userData = {
+        profile: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          bio: user.bio,
+          location: user.location,
+          socialLinks: user.socialLinks,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+        preferences: user.preferences,
+        rsvps: userRSVPs,
+        organizedEvents: userEvents,
+        exportedAt: new Date().toISOString(),
+      };
+
+      // Create and download JSON file
+      const dataStr = JSON.stringify(userData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `schedula-data-${user.name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success('Data exported successfully');
+    } catch (error) {
+      toast.error('Failed to export data');
     }
   };
 
@@ -130,6 +244,75 @@ export const Settings: React.FC = () => {
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
+
+          {/* Social Links */}
+          <Card className="card-glass">
+            <CardHeader>
+              <CardTitle>Social Links</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Add your social profiles for organizers to review when approving RSVPs
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="linkedin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LinkedIn Profile</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://linkedin.com/in/yourprofile" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="github"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>GitHub Profile</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://github.com/yourusername" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="twitter"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Twitter/X Profile</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://twitter.com/yourusername" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="portfolio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Portfolio Website</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://yourportfolio.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -304,14 +487,56 @@ export const Settings: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button type="button" variant="outline">
-                  Change Password
-                </Button>
-                <Button type="button" variant="outline">
+                <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="outline">
+                      Change Password
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Change Password</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium">Current Password</label>
+                        <Input
+                          type="password"
+                          value={passwordData.currentPassword}
+                          onChange={(e) => setPasswordData(prev => ({...prev, currentPassword: e.target.value}))}
+                          placeholder="Enter current password"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">New Password</label>
+                        <Input
+                          type="password"
+                          value={passwordData.newPassword}
+                          onChange={(e) => setPasswordData(prev => ({...prev, newPassword: e.target.value}))}
+                          placeholder="Enter new password"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Confirm New Password</label>
+                        <Input
+                          type="password"
+                          value={passwordData.confirmPassword}
+                          onChange={(e) => setPasswordData(prev => ({...prev, confirmPassword: e.target.value}))}
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={handleChangePassword}>Change Password</Button>
+                        <Button variant="outline" onClick={() => setIsChangePasswordOpen(false)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                
+                <Button type="button" variant="outline" onClick={handleDownloadData}>
                   Download Data
-                </Button>
-                <Button type="button" variant="destructive">
-                  Delete Account
                 </Button>
               </div>
             </CardContent>

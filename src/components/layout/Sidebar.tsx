@@ -2,6 +2,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
+import { eventStorage, rsvpStorage } from '@/lib/storage';
 import { cn } from '@/lib/utils';
 import {
   Calendar,
@@ -11,7 +12,6 @@ import {
   Bell,
   PlusCircle,
   BarChart3,
-  QrCode,
   User,
   Shield,
   UserCheck,
@@ -63,22 +63,26 @@ export const Sidebar: React.FC = () => {
   if (!user) return null;
 
   const isAdmin = user.role === 'admin';
-  const isOrganizer = user.role === 'organizer' || user.role === 'admin';
+  const isOrganizer = user.role === 'organizer' && user.status === 'active';
+  const canCreateEvents = isOrganizer; // Only active organizers can create events
 
   return (
-    <aside className="w-64 h-screen card-glass border-r border-border/50 sticky top-0 overflow-y-auto">
-      <div className="p-6">
+    <aside className="w-64 h-full card-glass border-r border-border/50 overflow-y-auto">
+      <div className="p-4 lg:p-6">
         {/* User Profile Section */}
-        <div className="mb-6">
-          <div className="flex items-center space-x-3 p-3 rounded-lg bg-muted/20">
-            <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-semibold">
+        <div className="mb-4 lg:mb-6">
+          <div className="flex items-center space-x-3 p-2 lg:p-3 rounded-lg bg-muted/20">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <span className="text-white font-semibold text-xs lg:text-sm">
                 {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.name}</p>
-              <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+              <p className="text-xs lg:text-sm font-medium truncate">{user.name}</p>
+              <p className="text-xs text-muted-foreground capitalize">
+                {user.role}
+                {user.status === 'pending' && ' (Pending)'}
+              </p>
             </div>
           </div>
         </div>
@@ -116,7 +120,7 @@ export const Sidebar: React.FC = () => {
           </div>
 
           {/* Organizer Section */}
-          {isOrganizer && (
+          {canCreateEvents && (
             <div className="pb-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                 Organizer
@@ -137,11 +141,34 @@ export const Sidebar: React.FC = () => {
                   icon={<BarChart3 className="h-4 w-4" />}
                   label="Analytics"
                 />
+              </div>
+            </div>
+          )}
+
+          {/* Analytics for Admin (without other organizer tools) */}
+          {isAdmin && !canCreateEvents && (
+            <div className="pb-2">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Tools
+              </h3>
+              <div className="space-y-1">
                 <SidebarItem
-                  to="/qr-scanner"
-                  icon={<QrCode className="h-4 w-4" />}
-                  label="QR Scanner"
+                  to="/analytics"
+                  icon={<BarChart3 className="h-4 w-4" />}
+                  label="Analytics"
                 />
+              </div>
+            </div>
+          )}
+
+          {/* Pending Organizer Message */}
+          {user.role === 'organizer' && user.status === 'pending' && (
+            <div className="pb-2">
+              <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
+                <p className="text-xs text-warning font-medium">Organizer Pending</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your organizer account is pending approval. You'll be able to create events once approved.
+                </p>
               </div>
             </div>
           )}
@@ -191,24 +218,41 @@ export const Sidebar: React.FC = () => {
         </nav>
 
         {/* Quick Stats */}
-        <div className="mt-6 p-4 rounded-lg bg-gradient-primary/10">
-          <h4 className="text-sm font-semibold mb-2">Quick Stats</h4>
-          <div className="space-y-2 text-sm">
+        <div className="mt-4 lg:mt-6 p-3 lg:p-4 rounded-lg bg-gradient-primary/10">
+          <h4 className="text-xs lg:text-sm font-semibold mb-2">Quick Stats</h4>
+          <div className="space-y-1 lg:space-y-2 text-xs lg:text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">My Events</span>
-              <span className="font-medium">12</span>
+              <span className="text-muted-foreground">My RSVPs</span>
+              <span className="font-medium">
+                {user ? rsvpStorage.getAll().filter(r => r.userId === user.id).length : 0}
+              </span>
             </div>
-            {isOrganizer && (
+            {canCreateEvents && (
               <>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total RSVPs</span>
-                  <span className="font-medium">456</span>
+                  <span className="text-muted-foreground">My Events</span>
+                  <span className="font-medium">
+                    {user ? eventStorage.getAll().filter(e => e.organizerId === user.id).length : 0}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">This Month</span>
-                  <span className="font-medium text-success">+23%</span>
+                  <span className="text-muted-foreground">Total RSVPs</span>
+                  <span className="font-medium">
+                    {user ? (() => {
+                      const myEvents = eventStorage.getAll().filter(e => e.organizerId === user.id);
+                      return rsvpStorage.getAll().filter(r => 
+                        myEvents.some(e => e.id === r.eventId)
+                      ).length;
+                    })() : 0}
+                  </span>
                 </div>
               </>
+            )}
+            {isAdmin && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Platform Events</span>
+                <span className="font-medium">{eventStorage.getAll().length}</span>
+              </div>
             )}
           </div>
         </div>

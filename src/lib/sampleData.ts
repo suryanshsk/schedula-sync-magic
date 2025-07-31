@@ -12,6 +12,11 @@ const sampleUsers: Omit<User, 'id' | 'createdAt' | 'updatedAt'>[] = [
     avatar: 'https://images.unsplash.com/photo-1494790108755-2616b332c08c?w=150&h=150&fit=crop&crop=face',
     bio: 'Platform administrator and event management specialist.',
     location: 'San Francisco, CA',
+    socialLinks: {
+      linkedin: 'https://linkedin.com/in/sarah-admin',
+      github: 'https://github.com/sarah-admin',
+      portfolio: 'https://sarahadmin.dev',
+    },
     preferences: {
       emailNotifications: true,
       pushNotifications: true,
@@ -48,6 +53,11 @@ const sampleUsers: Omit<User, 'id' | 'createdAt' | 'updatedAt'>[] = [
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
     bio: 'Technology enthusiast and lifelong learner.',
     location: 'Austin, TX',
+    socialLinks: {
+      linkedin: 'https://linkedin.com/in/emma-user',
+      github: 'https://github.com/emma-user',
+      twitter: 'https://twitter.com/emma_user',
+    },
     preferences: {
       emailNotifications: true,
       pushNotifications: false,
@@ -66,6 +76,11 @@ const sampleUsers: Omit<User, 'id' | 'createdAt' | 'updatedAt'>[] = [
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
     bio: 'UX designer organizing creative workshops.',
     location: 'Los Angeles, CA',
+    socialLinks: {
+      linkedin: 'https://linkedin.com/in/jane-designer',
+      portfolio: 'https://janedesigner.com',
+      twitter: 'https://twitter.com/jane_designer',
+    },
     preferences: {
       emailNotifications: true,
       pushNotifications: true,

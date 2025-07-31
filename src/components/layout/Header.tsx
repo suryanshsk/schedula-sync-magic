@@ -25,7 +25,11 @@ import {
 } from 'lucide-react';
 import { notificationStorage } from '@/lib/storage';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -68,7 +72,31 @@ export const Header: React.FC = () => {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - Public */}
+          {!user && (
+            <div className="hidden md:flex items-center space-x-6">
+              <Link 
+                to="/features" 
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                Features
+              </Link>
+              <Link 
+                to="/pricing" 
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                Pricing
+              </Link>
+              <Link 
+                to="/contact" 
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                Contact
+              </Link>
+            </div>
+          )}
+
+          {/* Desktop Navigation - Authenticated */}
           {user && (
             <div className="hidden md:flex items-center space-x-4">
               <Button variant="ghost" size="sm" className="btn-glass">
@@ -76,7 +104,7 @@ export const Header: React.FC = () => {
                 Search Events
               </Button>
               
-              {(user.role === 'organizer' || user.role === 'admin') && (
+              {(user.role === 'organizer' && user.status === 'active') && (
                 <Button 
                   variant="default" 
                   size="sm" 
@@ -162,34 +190,49 @@ export const Header: React.FC = () => {
               </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => navigate('/auth')}
-                  className="btn-glass"
+                {/* Mobile Menu Toggle for Public */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="md:hidden btn-glass"
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
                 >
-                  Sign In
+                  <Menu className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={() => navigate('/auth')}
-                  className="btn-neon"
-                >
-                  Get Started
-                </Button>
+                
+                {/* Desktop Auth Buttons */}
+                <div className="hidden md:flex items-center space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => navigate('/auth')}
+                    className="btn-glass"
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={() => navigate('/auth')}
+                    className="btn-neon"
+                  >
+                    Get Started
+                  </Button>
+                </div>
               </div>
             )}
 
             {/* Mobile Menu Toggle */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden btn-glass"
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-            >
-              <Menu className="h-4 w-4" />
-            </Button>
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="lg:hidden btn-glass"
+                onClick={onMenuClick}
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -197,20 +240,63 @@ export const Header: React.FC = () => {
         {showMobileMenu && (
           <div className="md:hidden py-4 border-t border-border/50">
             <div className="flex flex-col space-y-2">
-              <Button variant="ghost" size="sm" className="justify-start btn-glass">
-                <Search className="h-4 w-4 mr-2" />
-                Search Events
-              </Button>
-              {user && (user.role === 'organizer' || user.role === 'admin') && (
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="justify-start btn-neon"
-                  onClick={() => navigate('/create-event')}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Event
-                </Button>
+              {user ? (
+                <>
+                  <Button variant="ghost" size="sm" className="justify-start btn-glass">
+                    <Search className="h-4 w-4 mr-2" />
+                    Search Events
+                  </Button>
+                  {(user.role === 'organizer' && user.status === 'active') && (
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      className="justify-start btn-neon"
+                      onClick={() => navigate('/create-event')}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Event
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Link 
+                    to="/features" 
+                    className="py-2 px-4 text-sm font-medium hover:bg-muted/20 rounded-md transition-colors"
+                  >
+                    Features
+                  </Link>
+                  <Link 
+                    to="/pricing" 
+                    className="py-2 px-4 text-sm font-medium hover:bg-muted/20 rounded-md transition-colors"
+                  >
+                    Pricing
+                  </Link>
+                  <Link 
+                    to="/contact" 
+                    className="py-2 px-4 text-sm font-medium hover:bg-muted/20 rounded-md transition-colors"
+                  >
+                    Contact
+                  </Link>
+                  <div className="flex flex-col space-y-2 pt-2 border-t border-border/50">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => navigate('/auth')}
+                      className="justify-start btn-glass"
+                    >
+                      Sign In
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={() => navigate('/auth')}
+                      className="justify-start btn-neon"
+                    >
+                      Get Started
+                    </Button>
+                  </div>
+                </>
               )}
             </div>
           </div>

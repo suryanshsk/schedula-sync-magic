@@ -283,7 +283,7 @@ export const OrganizerDashboard: React.FC = () => {
               onClick={() => navigate('/my-events')}
             >
               <Calendar className="h-4 w-4 mr-2" />
-              My Events
+              My Events & QR Check-in
             </Button>
             <Button 
               variant="outline" 
@@ -292,14 +292,6 @@ export const OrganizerDashboard: React.FC = () => {
             >
               <TrendingUp className="h-4 w-4 mr-2" />
               Analytics
-            </Button>
-            <Button 
-              variant="outline" 
-              className="btn-glass justify-start"
-              onClick={() => navigate('/qr-scanner')}
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Check-in
             </Button>
           </div>
         </CardContent>

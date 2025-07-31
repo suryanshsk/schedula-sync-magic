@@ -40,7 +40,27 @@ const eventFormSchema = z.object({
 export const CreateEvent: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
+  // Only organizers can create events, not admins
+  React.useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    
+    if (user.role !== 'organizer') {
+      toast.error('Only organizers can create events');
+      navigate('/dashboard');
+      return;
+    }
+
+    if (user.status !== 'active') {
+      toast.error('Your organizer account is pending approval');
+      navigate('/dashboard');
+      return;
+    }
+  }, [user, navigate]);
+
   const form = useForm<EventForm>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
@@ -61,9 +81,19 @@ export const CreateEvent: React.FC = () => {
   const watchLocationType = form.watch('locationType');
   const watchPricingType = form.watch('pricingType');
 
-  const onSubmit = (data: EventForm) => {
+  const onSubmit = (data: EventForm, status: 'draft' | 'published' = 'published') => {
     if (!user) {
       toast.error('You must be logged in to create an event');
+      return;
+    }
+
+    if (user.role !== 'organizer') {
+      toast.error('Only organizers can create events');
+      return;
+    }
+
+    if (user.status !== 'active') {
+      toast.error('Your organizer account is pending approval');
       return;
     }
 
@@ -91,14 +121,22 @@ export const CreateEvent: React.FC = () => {
         currency: data.currency || 'USD',
       },
       capacity: data.capacity,
-      status: 'draft',
+      status: status,
       visibility: data.visibility,
       registrationDeadline: data.registrationDeadline,
     };
 
     const createdEvent = eventStorage.create(newEvent);
-    toast.success('Event created successfully!');
+    toast.success(`Event ${status === 'published' ? 'published' : 'saved as draft'} successfully!`);
     navigate(`/my-events`);
+  };
+
+  const handleSaveAsDraft = (data: EventForm) => {
+    onSubmit(data, 'draft');
+  };
+
+  const handlePublish = (data: EventForm) => {
+    onSubmit(data, 'published');
   };
 
   return (
@@ -109,7 +147,7 @@ export const CreateEvent: React.FC = () => {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form className="space-y-8">
           {/* Basic Information */}
           <Card className="card-glass">
             <CardHeader>
@@ -491,8 +529,18 @@ export const CreateEvent: React.FC = () => {
             <Button type="button" variant="outline" onClick={() => navigate('/dashboard')}>
               Cancel
             </Button>
-            <Button type="submit">
-              Create Event
+            <Button 
+              type="button" 
+              variant="secondary"
+              onClick={form.handleSubmit(handleSaveAsDraft)}
+            >
+              Save as Draft
+            </Button>
+            <Button 
+              type="button"
+              onClick={form.handleSubmit(handlePublish)}
+            >
+              Publish Event
             </Button>
           </div>
         </form>

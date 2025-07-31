@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Calendar, Users, MapPin, MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,16 +7,41 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/components/AuthProvider';
 import { eventStorage } from '@/lib/storage';
+import { toast } from 'sonner';
 
 export const MyEvents: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [events, setEvents] = React.useState(
     user ? eventStorage.getByOrganizer(user.id) : []
   );
 
   const deleteEvent = (eventId: string) => {
-    eventStorage.delete(eventId);
-    setEvents(user ? eventStorage.getByOrganizer(user.id) : []);
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      eventStorage.delete(eventId);
+      setEvents(user ? eventStorage.getByOrganizer(user.id) : []);
+      toast.success('Event deleted successfully');
+    }
+  };
+
+  const handleViewAnalytics = (eventId: string) => {
+    // Navigate to event analytics page
+    navigate(`/event/${eventId}/analytics`);
+  };
+
+  const handleManageEvent = (eventId: string) => {
+    // Navigate to event management page
+    navigate(`/event/${eventId}/manage`);
+  };
+
+  const handleViewDetails = (eventId: string) => {
+    // Navigate to event details page
+    navigate(`/event/${eventId}`);
+  };
+
+  const handleEditEvent = (eventId: string) => {
+    // Navigate to edit event page
+    navigate(`/event/${eventId}/edit`);
   };
 
   const getStatusColor = (status: string) => {
@@ -66,11 +91,11 @@ export const MyEvents: React.FC = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewDetails(event.id)}>
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditEvent(event.id)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Event
                         </DropdownMenuItem>
@@ -111,10 +136,19 @@ export const MyEvents: React.FC = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleViewAnalytics(event.id)}
+                  >
                     View Analytics
                   </Button>
-                  <Button size="sm" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleManageEvent(event.id)}
+                  >
                     Manage
                   </Button>
                 </div>
