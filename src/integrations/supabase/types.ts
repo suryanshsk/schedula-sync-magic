@@ -14,7 +14,268 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendance: {
+        Row: {
+          checked_in_at: string
+          checked_in_by: string
+          event_id: string
+          id: string
+          location: string | null
+          method: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          checked_in_at?: string
+          checked_in_by: string
+          event_id: string
+          id?: string
+          location?: string | null
+          method: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          checked_in_at?: string
+          checked_in_by?: string
+          event_id?: string
+          id?: string
+          location?: string | null
+          method?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          agenda: Json | null
+          capacity: number
+          category: string
+          created_at: string
+          description: string
+          end_date: string
+          id: string
+          image_url: string | null
+          location: Json
+          metrics: Json | null
+          organizer_id: string
+          pricing: Json
+          registration_deadline: string | null
+          requirements: string[] | null
+          short_description: string | null
+          start_date: string
+          status: string
+          tags: string[] | null
+          title: string
+          type: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          agenda?: Json | null
+          capacity?: number
+          category: string
+          created_at?: string
+          description: string
+          end_date: string
+          id?: string
+          image_url?: string | null
+          location?: Json
+          metrics?: Json | null
+          organizer_id: string
+          pricing?: Json
+          registration_deadline?: string | null
+          requirements?: string[] | null
+          short_description?: string | null
+          start_date: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          type: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          agenda?: Json | null
+          capacity?: number
+          category?: string
+          created_at?: string
+          description?: string
+          end_date?: string
+          id?: string
+          image_url?: string | null
+          location?: Json
+          metrics?: Json | null
+          organizer_id?: string
+          pricing?: Json
+          registration_deadline?: string | null
+          requirements?: string[] | null
+          short_description?: string | null
+          start_date?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          type?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          action_text: string | null
+          action_url: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_text?: string | null
+          action_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          action_text?: string | null
+          action_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar: string | null
+          bio: string | null
+          created_at: string
+          email: string
+          id: string
+          location: string | null
+          name: string
+          preferences: Json
+          role: string
+          social_links: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar?: string | null
+          bio?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          location?: string | null
+          name: string
+          preferences?: Json
+          role?: string
+          social_links?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar?: string | null
+          bio?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          location?: string | null
+          name?: string
+          preferences?: Json
+          role?: string
+          social_links?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      rsvps: {
+        Row: {
+          attendance_status: string | null
+          checked_in: boolean
+          checked_in_at: string | null
+          checked_in_by: string | null
+          checked_in_method: string | null
+          confirmed_at: string | null
+          event_id: string
+          id: string
+          notes: string | null
+          qr_code: string | null
+          registration_date: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          attendance_status?: string | null
+          checked_in?: boolean
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          checked_in_method?: string | null
+          confirmed_at?: string | null
+          event_id: string
+          id?: string
+          notes?: string | null
+          qr_code?: string | null
+          registration_date?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          attendance_status?: string | null
+          checked_in?: boolean
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          checked_in_method?: string | null
+          confirmed_at?: string | null
+          event_id?: string
+          id?: string
+          notes?: string | null
+          qr_code?: string | null
+          registration_date?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
