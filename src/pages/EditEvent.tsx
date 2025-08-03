@@ -24,7 +24,7 @@ export const EditEvent: React.FC = () => {
     shortDescription: '',
     startDate: '',
     endDate: '',
-    locationType: 'physical' as 'physical' | 'online' | 'hybrid',
+    locationType: 'in-person' as 'in-person' | 'online' | 'hybrid',
     venue: '',
     address: '',
     city: '',
@@ -304,15 +304,15 @@ export const EditEvent: React.FC = () => {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="physical">Physical Location</SelectItem>
-                  <SelectItem value="online">Online Event</SelectItem>
-                  <SelectItem value="hybrid">Hybrid (Physical + Online)</SelectItem>
-                </SelectContent>
+                  <SelectContent>
+                    <SelectItem value="in-person">Physical Location</SelectItem>
+                    <SelectItem value="online">Online Event</SelectItem>
+                    <SelectItem value="hybrid">Hybrid (Physical + Online)</SelectItem>
+                  </SelectContent>
               </Select>
             </div>
 
-            {(formData.locationType === 'physical' || formData.locationType === 'hybrid') && (
+            {(formData.locationType === 'in-person' || formData.locationType === 'hybrid') && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="venue">Venue Name</Label>

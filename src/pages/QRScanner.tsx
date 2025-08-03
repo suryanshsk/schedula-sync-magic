@@ -13,7 +13,7 @@ export const QRScanner: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const scanIntervalRef = useRef<number | null>(null);
   
   const [isScanning, setIsScanning] = useState(false);
   const [isStartingCamera, setIsStartingCamera] = useState(false);
