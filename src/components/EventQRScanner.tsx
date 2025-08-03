@@ -25,7 +25,7 @@ export const EventQRScanner: React.FC<EventQRScannerProps> = ({ eventId, onCheck
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [barcodeDetector, setBarcodeDetector] = useState<any>(null);
   const [debugInfo, setDebugInfo] = useState<string>('Ready to scan');
-  const [currentEvent, setCurrentEvent] = useState(eventStorage.getById(eventId));
+  const [currentEvent, setCurrentEvent] = useState<any>(null);
 
   // Check barcode detector support on mount
   useEffect(() => {
@@ -39,6 +39,15 @@ export const EventQRScanner: React.FC<EventQRScannerProps> = ({ eventId, onCheck
       console.log('BarcodeDetector not supported, using jsQR fallback');
     }
   }, []);
+
+  // Load event data
+  useEffect(() => {
+    const loadEvent = async () => {
+      const event = await eventStorage.getById(eventId);
+      setCurrentEvent(event);
+    };
+    loadEvent();
+  }, [eventId]);
 
   const startCamera = async () => {
     try {
@@ -260,7 +269,7 @@ export const EventQRScanner: React.FC<EventQRScannerProps> = ({ eventId, onCheck
 
       // Check if QR is for THIS specific event
       if (parsedData.eventId !== eventId) {
-        const wrongEvent = eventStorage.getById(parsedData.eventId);
+        const wrongEvent = await eventStorage.getById(parsedData.eventId);
         toast.warning(`🎫 This ticket is for "${wrongEvent?.title || 'Another Event'}", not "${currentEvent?.title}"`);
         setDebugInfo('Wrong event ticket');
         setTimeout(startScanningLoop, 3000);
@@ -268,7 +277,7 @@ export const EventQRScanner: React.FC<EventQRScannerProps> = ({ eventId, onCheck
       }
 
       // Check RSVP validity
-      const rsvp = rsvpStorage.getById(parsedData.rsvpId);
+      const rsvp = await rsvpStorage.getById(parsedData.rsvpId);
       if (!rsvp) {
         toast.error('🎫 Ticket not found in system');
         setDebugInfo('RSVP not found');
@@ -284,7 +293,7 @@ export const EventQRScanner: React.FC<EventQRScannerProps> = ({ eventId, onCheck
       }
 
       if (rsvp.checkedIn) {
-        const attendeeUser = userStorage.getById(parsedData.userId);
+        const attendeeUser = await userStorage.getById(parsedData.userId);
         toast.warning(`✅ ${attendeeUser?.name || 'Attendee'} already checked in!`);
         setDebugInfo('Already checked in');
         setTimeout(startScanningLoop, 3000);
@@ -292,7 +301,7 @@ export const EventQRScanner: React.FC<EventQRScannerProps> = ({ eventId, onCheck
       }
 
       // Get attendee details
-      const attendeeUser = userStorage.getById(parsedData.userId);
+      const attendeeUser = await userStorage.getById(parsedData.userId);
       if (!attendeeUser) {
         toast.error('🎫 Valid ticket but attendee not found');
         setDebugInfo('Attendee not found');
@@ -301,7 +310,7 @@ export const EventQRScanner: React.FC<EventQRScannerProps> = ({ eventId, onCheck
       }
 
       // Create attendance record
-      const attendance = attendanceStorage.create({
+      const attendance = await attendanceStorage.create({
         eventId: parsedData.eventId,
         userId: parsedData.userId,
         checkedInBy: user?.id || 'system',
@@ -311,7 +320,7 @@ export const EventQRScanner: React.FC<EventQRScannerProps> = ({ eventId, onCheck
       });
 
       // Update RSVP status
-      rsvpStorage.update(parsedData.rsvpId, {
+      await rsvpStorage.update(parsedData.rsvpId, {
         checkedIn: true,
         checkedInAt: new Date().toISOString(),
         checkedInBy: user?.id || 'system',
@@ -323,7 +332,7 @@ export const EventQRScanner: React.FC<EventQRScannerProps> = ({ eventId, onCheck
       setDebugInfo(`✅ Checked in: ${attendeeUser.name}`);
       
       const scanRecord = {
-        id: attendance.id,
+        id: attendance?.id || 'temp',
         attendeeName: attendeeUser.name,
         attendeeEmail: attendeeUser.email,
         timestamp: new Date().toISOString(),
